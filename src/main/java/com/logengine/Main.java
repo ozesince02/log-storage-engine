@@ -30,5 +30,19 @@ public class Main {
                     System.out.println(e.getTimestamp() + " " + e.getLogLevel() + " " + e.getMessage())
             );
         }
+
+        long start = System.currentTimeMillis() - 1000; // last 1 second
+        long end = System.currentTimeMillis();
+
+        var segments = manager.getSegmentsByTimeRange(start, end);
+        for (var segment : segments) {
+            var entries = SegmentReader.readByTimeRange(
+                    segment.getFilePath(),
+                    start,
+                    end
+            );
+
+            entries.forEach(System.out::println);
+        }
     }
 }

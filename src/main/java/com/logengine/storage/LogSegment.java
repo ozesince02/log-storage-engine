@@ -11,6 +11,8 @@ public class LogSegment {
     private final Path filePath;
     private final BufferedWriter writer;
     public long size;
+    private long minTimestamp = Long.MAX_VALUE;
+    private long maxTimestamp = Long.MIN_VALUE;
 
     public LogSegment(Path filePath) throws IOException {
         this.filePath = filePath;
@@ -23,6 +25,8 @@ public class LogSegment {
         writer.write(serialized);
         writer.flush();
         size += serialized.getBytes().length;
+        minTimestamp = Math.min(minTimestamp, logEntry.getTimestamp());
+        maxTimestamp = Math.max(maxTimestamp, logEntry.getTimestamp());
     }
 
     public long getSize() {
@@ -40,4 +44,13 @@ public class LogSegment {
     public Path getFilePath() {
         return filePath;
     }
+
+    public long getMinTimestamp() {
+        return minTimestamp;
+    }
+
+    public long getMaxTimestamp() {
+        return maxTimestamp;
+    }
+
 }

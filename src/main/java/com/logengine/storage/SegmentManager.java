@@ -58,4 +58,15 @@ public class SegmentManager {
     public List<LogSegment> getSegments() {
         return segments;
     }
+
+    public List<LogSegment> getSegmentsByTimeRange(long startTime, long endTime) {
+        List<LogSegment> result = new ArrayList<>();
+        for (LogSegment segment : segments) {
+            if (segment.getMaxTimestamp() < startTime || segment.getMinTimestamp() > endTime) {
+                continue; // skip segments that are completely outside the time range
+            }
+            result.add(segment);
+        }
+        return result;
+    }
 }

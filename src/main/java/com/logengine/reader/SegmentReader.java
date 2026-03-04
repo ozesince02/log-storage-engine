@@ -20,4 +20,23 @@ public class SegmentReader {
         }
         return entries;
     }
+
+    public static List<LogEntry> readByTimeRange(Path filepath, long startTime, long endTime) throws IOException {
+        List<LogEntry> entries = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(filepath.toFile()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                LogEntry entry = LogEntry.deserialize(line);
+                if (entry.getTimestamp() >= startTime && entry.getTimestamp() <= endTime) {
+                    entries.add(entry);
+                }
+
+                // stop early if the logs exceed the time range
+                if (entry.getTimestamp() > endTime) {
+                    break;
+                }
+            }
+        }
+        return entries;
+    }
 }
