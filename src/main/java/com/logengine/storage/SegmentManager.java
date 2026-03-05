@@ -2,6 +2,8 @@ package com.logengine.storage;
 
 import com.logengine.model.LogEntry;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,7 +23,11 @@ public class SegmentManager {
         if (!Files.exists(logDir)) {
             Files.createDirectories(logDir);
         }
-        createNewSegment();
+
+        loadExistingSegments();
+        if (segments.isEmpty()) {
+            createNewSegment();
+        }
     }
 
     public synchronized void append(LogEntry logEntry) throws IOException {
@@ -68,5 +74,46 @@ public class SegmentManager {
             result.add(segment);
         }
         return result;
+    }
+
+    private void rebuildMetadata(LogSegment segment) throws IOException {
+        long min = Long.MAX_VALUE;
+        long max = Long.MIN_VALUE;
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(segment.getFilePath().toFile()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                LogEntry entry = LogEntry.deserialize(line);
+                min = Math.min(min, entry.getTimestamp());
+                max = Math.max(max, entry.getTimestamp());
+            }
+        }
+        segment.setMetadata(min, max);
+        SegmentMetadata metadata = new SegmentMetadata(min, max);
+        metadata.save(Path.of(segment.getFilePath().toString() + ".meta"));
+    }
+
+    private void loadExistingSegments() throws IOException {
+        var files = Files.list(logDir)
+                .filter(p -> p.toString().endsWith(".log"))
+                .sorted()
+                .toList();
+
+        for (Path file: files) {
+            LogSegment segment = new LogSegment(file);
+            Path metaPath = Path.of(file.toString()+".meta");
+            if (Files.exists(metaPath)) {
+                SegmentMetadata metadata = SegmentMetadata.load(metaPath);
+                segment.setMetadata(metadata.getMinTimestamp(), metadata.getMaxTimestamp());
+            } else {
+                rebuildMetadata(segment);
+            }
+            segments.add(segment);
+            segmentCounter++;
+        }
+
+        if (!segments.isEmpty()) {
+            activeSegment = segments.getLast();
+        }
     }
 }

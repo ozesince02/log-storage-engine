@@ -39,6 +39,9 @@ public class LogSegment {
 
     public void close() throws IOException {
         writer.close();
+        Path metaPath = Path.of(filePath.toString() + ".meta");
+        SegmentMetadata meta = new SegmentMetadata(minTimestamp, maxTimestamp);
+        meta.save(metaPath);
     }
 
     public Path getFilePath() {
@@ -53,4 +56,8 @@ public class LogSegment {
         return maxTimestamp;
     }
 
+    public void setMetadata(long minTimestamp, long maxTimestamp) {
+        this.minTimestamp = minTimestamp;
+        this.maxTimestamp = maxTimestamp;
+    }
 }
