@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class WriteBuffer {
     private final ArrayBlockingQueue<LogEntry> queue;
@@ -31,8 +32,10 @@ public class WriteBuffer {
             long lastFlush = System.currentTimeMillis();
             while (true) {
                 try {
-                    LogEntry entry = queue.take(); // blocks if the queue is empty
-                    batch.add(entry);
+                    LogEntry entry = queue.poll(50, TimeUnit.MILLISECONDS); // non-blocking poll
+                    if (entry != null) {
+                       batch.add(entry);
+                    }
                     long now = System.currentTimeMillis();
                     if (batch.size() >= batchSize || now - lastFlush >= flushIntervalMs) {
                         flush(batch);
@@ -42,8 +45,7 @@ public class WriteBuffer {
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
+                    throw new RuntimeException(e);
                 }
             }
         });
