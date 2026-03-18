@@ -8,6 +8,10 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Asynchronous buffer to handle log intake without blocking the application.
+ * Collects log entries into batches and flushes them to disk periodically.
+ */
 public class WriteBuffer {
     private final ArrayBlockingQueue<LogEntry> queue;
     private final SegmentManager segmentManager;
@@ -22,10 +26,18 @@ public class WriteBuffer {
         startBackgroundWriter();
     }
 
+    /**
+     * Adds a log entry to the internal queue.
+     * Blocks if the buffer is full (pressure relief/backpressure).
+     */
     public void append(LogEntry logEntry) throws InterruptedException {
         queue.put(logEntry); // blocks if the queue is full
     }
 
+    /**
+     * Spawns a dedicated thread to monitor the queue for new entries.
+     * Flushes to SegmentManager when batch size is reached or interval expires.
+     */
     private void startBackgroundWriter() {
         Thread writerThread = new Thread(() -> {
             List<LogEntry> batch = new ArrayList<>();

@@ -9,7 +9,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Utility for reading log entries from segment files.
+ * Provides full read and time-filtered read capabilities.
+ */
 public class SegmentReader {
+    /**
+     * Reads all log entries from a specific file.
+     */
     public static List<LogEntry> readAll(Path filepath) throws IOException {
         List<LogEntry> entries = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(filepath.toFile()))) {
@@ -21,6 +28,11 @@ public class SegmentReader {
         return entries;
     }
 
+    /**
+     * Reads log entries that fall within the given timestamp range.
+     * Optimization: Terminates reading once the entry timestamp exceeds endTime,
+     * assuming log entries in the file are chronologically sorted.
+     */
     public static List<LogEntry> readByTimeRange(Path filepath, long startTime, long endTime) throws IOException {
         List<LogEntry> entries = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(filepath.toFile()))) {
