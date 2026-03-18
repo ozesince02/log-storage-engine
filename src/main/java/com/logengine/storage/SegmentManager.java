@@ -10,6 +10,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Orchestrates multiple LogSegments.
+ * Manages segment rotation, recovery of existing logs on disk, and time-range filtering.
+ */
 public class SegmentManager {
     private final Path logDir;
     private final long maxSegmentSize;
@@ -30,6 +34,10 @@ public class SegmentManager {
         }
     }
 
+    /**
+     * Appends a log entry to the current active segment.
+     * Rotates log (creates new segment) if max size limit is reached.
+     */
     public synchronized void append(LogEntry logEntry) throws IOException {
         if (activeSegment.getSize() + logEntry.serialize().getBytes().length > maxSegmentSize) {
             createNewSegment();
@@ -37,6 +45,9 @@ public class SegmentManager {
         activeSegment.append(logEntry);
     }
 
+    /**
+     * Finalizes current segment and starts a new numbered log file.
+     */
     public void createNewSegment() throws IOException {
         if (activeSegment != null) {
             activeSegment.flush();
@@ -65,6 +76,10 @@ public class SegmentManager {
         return segments;
     }
 
+    /**
+     * Filters segments based on their timestamp ranges to narrow down search scope.
+     * Essential for efficient retrieval.
+     */
     public List<LogSegment> getSegmentsByTimeRange(long startTime, long endTime) {
         List<LogSegment> result = new ArrayList<>();
         for (LogSegment segment : segments) {
@@ -76,6 +91,10 @@ public class SegmentManager {
         return result;
     }
 
+    /**
+     * Recalculates metadata (min/max timestamp) by reading a log file line by line.
+     * Invoked when a segment file exists but its metadata file (.meta) is missing.
+     */
     private void rebuildMetadata(LogSegment segment) throws IOException {
         long min = Long.MAX_VALUE;
         long max = Long.MIN_VALUE;
@@ -93,6 +112,10 @@ public class SegmentManager {
         metadata.save(Path.of(segment.getFilePath().toString() + ".meta"));
     }
 
+    /**
+     * Discovers all log files in the directory and organizes them into memory.
+     * Recovers metadata from disk or via rebuilding.
+     */
     private void loadExistingSegments() throws IOException {
         var files = Files.list(logDir)
                 .filter(p -> p.toString().endsWith(".log"))
