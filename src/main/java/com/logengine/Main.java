@@ -3,6 +3,7 @@ package com.logengine;
 import com.logengine.model.BinaryLogRecord;
 import com.logengine.model.LogEntry;
 import com.logengine.reader.SegmentReader;
+import com.logengine.storage.MappedLogSegment;
 import com.logengine.storage.SegmentManager;
 
 import java.nio.ByteBuffer;
@@ -52,16 +53,33 @@ public class Main {
 //        }
 
         // Demonstrate binary serialization of a single log record
-        BinaryLogRecord record =
-                new BinaryLogRecord(System.currentTimeMillis(), (byte)3, "DB failed");
+//        BinaryLogRecord record =
+//                new BinaryLogRecord(System.currentTimeMillis(), (byte)3, "DB failed");
+//
+//        // ByteBuffer is a container for data of a specific primitive type.
+//        // It provides methods for reading and writing data, and manages a 'position', 'limit', and 'capacity'.
+//        ByteBuffer buffer = record.serialize();
+//
+//        BinaryLogRecord decoded =
+//                BinaryLogRecord.deserialize(buffer);
+//
+//        System.out.println(decoded.getMessage());
 
-        // ByteBuffer is a container for data of a specific primitive type.
-        // It provides methods for reading and writing data, and manages a 'position', 'limit', and 'capacity'.
-        ByteBuffer buffer = record.serialize();
+        MappedLogSegment segment =
+                new MappedLogSegment(
+                        Path.of("mapped_segment.log"),
+                        1024 * 1024
+                );
 
-        BinaryLogRecord decoded =
-                BinaryLogRecord.deserialize(buffer);
+        segment.append(
+                new BinaryLogRecord(
+                        System.currentTimeMillis(),
+                        (byte)3,
+                        "DB connection failed"
+                )
+        );
 
-        System.out.println(decoded.getMessage());
+        segment.flush();
+        segment.close();
     }
 }
